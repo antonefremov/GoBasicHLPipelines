@@ -1,0 +1,43 @@
+Id:       blockchain-pipes
+Version:  0.1
+
+swagger: "2.0"
+
+info:
+  description: "Golang pipes demo for HLF blockchain"
+  version: "0.1"
+  title: "Pipelines tests"
+
+
+consumes:
+  - application/x-www-form-urlencoded
+produces:
+  - application/json
+
+
+parameters:
+
+  input_val:
+    name: input_val
+    in: formData
+    description: Input value
+    required: true
+    type: string
+    maxLength: 64
+
+paths:
+
+  /seq/:
+
+    post:
+      operationId: runCalcSeq
+      summary: Run sequential execution
+      parameters:
+      - $ref: '#/parameters/input_val'
+      responses:
+        200:
+          description: Key Created
+        400:
+          description: Parameter Mismatch
+        500:
+          description: Server Error
