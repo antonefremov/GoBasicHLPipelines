@@ -135,14 +135,14 @@ func startSingleHashWorkers(data string, out chan<- string) {
 }
 
 func startMultiHashWorkers(data string, out chan<- string) {
-	const iterations = 5
+	const iterations = 6
 	var i int
 	var arrResult [iterations]string
 
 	wg := &sync.WaitGroup{}
 	wg.Add(iterations)
 
-	for i = 0; i <= iterations; i++ {
+	for i = 0; i < iterations; i++ {
 		go func(input int) {
 			defer wg.Done()
 			sI := strconv.Itoa(input)
