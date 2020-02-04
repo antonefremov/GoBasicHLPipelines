@@ -1,11 +1,11 @@
 Id:       blockchain-pipes
-Version:  0.1
+Version:  0.2
 
 swagger: "2.0"
 
 info:
   description: "Golang pipes demo for HLF blockchain"
-  version: "0.1"
+  version: "0.2"
   title: "Pipelines tests"
 
 
@@ -32,6 +32,21 @@ paths:
     post:
       operationId: runCalcSeq
       summary: Run sequential execution
+      parameters:
+      - $ref: '#/parameters/input_val'
+      responses:
+        200:
+          description: Key Created
+        400:
+          description: Parameter Mismatch
+        500:
+          description: Server Error
+
+  /parallel/:
+
+    post:
+      operationId: runCalcParallel
+      summary: Run parallel execution
       parameters:
       - $ref: '#/parameters/input_val'
       responses:

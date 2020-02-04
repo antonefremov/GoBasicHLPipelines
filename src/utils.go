@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"hash/crc32"
 	"strconv"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -86,4 +88,69 @@ func getMultiHash(data string) string {
 		result += getCrc32(sI + data)
 	}
 	return result
+}
+
+// gets a crc32(data) + "~" + crc32(md5(data)) value in parallel mode
+func getSingleHashParallel(in string) string {
+	out := make(chan string)
+
+	go func(data string) {
+		startSingleHashWorkers(data, out)
+	}(in)
+
+	return <-out
+}
+
+// gets a crc32(i + data) where i = 0..5 in parallel mode
+func getMultiHashParallel(in string) string {
+	out := make(chan string)
+
+	go func(data string) {
+		startMultiHashWorkers(data, out)
+	}(in)
+
+	return <-out
+}
+
+func startSingleHashWorkers(data string, out chan<- string) {
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+
+	var left, right string
+
+	go func() {
+		defer wg.Done()
+		left = getCrc32(data)
+	}()
+
+	go func() {
+		defer wg.Done()
+		hash := getMd5(data)
+		right = getCrc32(hash)
+	}()
+
+	wg.Wait()
+	result := left + "~" + right
+	out <- result
+}
+
+func startMultiHashWorkers(data string, out chan<- string) {
+	const iterations = 5
+	var i int
+	var arrResult [iterations]string
+
+	wg := &sync.WaitGroup{}
+	wg.Add(iterations)
+
+	for i = 0; i <= iterations; i++ {
+		go func(input int) {
+			defer wg.Done()
+			sI := strconv.Itoa(input)
+			result := getCrc32(sI + data)
+			arrResult[input] = result
+		}(i)
+	}
+
+	wg.Wait()
+	out <- strings.Join(arrResult[:], "")
 }

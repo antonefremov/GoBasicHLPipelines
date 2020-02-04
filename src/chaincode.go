@@ -34,7 +34,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) peer.Response
 	case "runCalcSeq":
 		return runCalcSeq(stub, args)
 	case "runCalcParallel":
-		return shim.Error("Invoke: method not implemented" + function)
+		return runCalcParallel(stub, args)
 	default:
 		return shim.Error("Invoke: no such method " + function)
 
