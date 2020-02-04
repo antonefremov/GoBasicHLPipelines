@@ -14,6 +14,8 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
+type job func(in, out chan interface{})
+
 const signerSalt string = ""
 
 func initChaincode(test *testing.T) *shim.MockStub {
@@ -55,6 +57,40 @@ func invoke(test *testing.T, stub *shim.MockStub, function string, args [][]byte
 	return []byte(result.Payload)
 }
 
+func runPipeline(funcs ...job) {
+
+	var prevChan, currChan chan interface{}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(funcs))
+
+	for idx, fItem := range funcs {
+		if idx == 0 {
+			prevChan = nil
+			currChan = make(chan interface{})
+		} else if idx == len(funcs)-1 {
+			prevChan = currChan
+			currChan = nil
+		} else {
+			prevChan = currChan
+			currChan = make(chan interface{})
+		}
+
+		go func(f job, in, out chan interface{}) {
+			defer func(ch chan interface{}) {
+				wg.Done()
+				if ch != nil {
+					close(ch)
+				}
+			}(out)
+
+			f(in, out)
+		}(fItem, prevChan, currChan)
+	}
+
+	wg.Wait()
+}
+
 func getMd5(data string) string {
 	data += signerSalt
 	dataHash := fmt.Sprintf("%x", md5.Sum([]byte(data)))
@@ -91,28 +127,53 @@ func getMultiHash(data string) string {
 }
 
 // gets a crc32(data) + "~" + crc32(md5(data)) value in parallel mode
-func getSingleHashParallel(in string) string {
-	out := make(chan string)
+func getSingleHashParallel(in, out chan interface{}) {
+	wg := &sync.WaitGroup{}
 
-	go func(data string) {
-		startSingleHashWorkers(data, out)
-	}(in)
+	for input := range in {
+		wg.Add(1)
+		data, ok := input.(string)
+		if !ok {
+			fmt.Println("Can't convert result input to string")
+		}
+		dataStr := string(data)
 
-	return <-out
+		go func(data string) {
+			defer wg.Done()
+			startSingleHashWorkers(data, out)
+		}(dataStr)
+	}
+
+	wg.Wait()
 }
 
 // gets a crc32(i + data) where i = 0..5 in parallel mode
-func getMultiHashParallel(in string) string {
-	out := make(chan string)
+func getMultiHashParallel(in, out chan interface{}) {
 
-	go func(data string) {
-		startMultiHashWorkers(data, out)
-	}(in)
+	wg := &sync.WaitGroup{}
 
-	return <-out
+	for input := range in {
+		var dataStr string
+		wg.Add(1)
+		// data := strconv.Itoa(input.(int))
+		data, ok := input.(int)
+		if !ok {
+			dataStr, ok = input.(string)
+			//fmt.Println("Can't convert result input to int")
+		} else {
+			dataStr = strconv.Itoa(data)
+		}
+
+		go func(data string) {
+			defer wg.Done()
+			startMultiHashWorkers(data, out)
+		}(dataStr)
+	}
+
+	wg.Wait()
 }
 
-func startSingleHashWorkers(data string, out chan<- string) {
+func startSingleHashWorkers(data string, out chan interface{}) {
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 
@@ -134,7 +195,7 @@ func startSingleHashWorkers(data string, out chan<- string) {
 	out <- result
 }
 
-func startMultiHashWorkers(data string, out chan<- string) {
+func startMultiHashWorkers(data string, out chan interface{}) {
 	const iterations = 6
 	var i int
 	var arrResult [iterations]string

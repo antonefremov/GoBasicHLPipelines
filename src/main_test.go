@@ -24,7 +24,7 @@ func TestSeq(test *testing.T) {
 func TestParallel(test *testing.T) {
 	stub := initChaincode(test)
 
-	inputDataAsBytes := [][]byte{[]byte(strconv.Itoa(inputData[0]))}
+	inputDataAsBytes := [][]byte{[]byte(strconv.Itoa(inputData[0])), []byte(strconv.Itoa(inputData[1]))}
 
 	start := time.Now()
 	resultBytes := invoke(test, stub, "runCalcParallel", inputDataAsBytes)

@@ -1,11 +1,11 @@
 Id:       blockchain-pipes
-Version:  0.2
+Version:  0.3
 
 swagger: "2.0"
 
 info:
   description: "Golang pipes demo for HLF blockchain"
-  version: "0.2"
+  version: "0.3"
   title: "Pipelines tests"
 
 
